@@ -87,6 +87,7 @@ NUM_RECORDS | space separated list of number of records to produce | NUM_RECORDS
 RECORD_SIZES | space separated list of record sizes | RECORD_SIZES="1024 10240"
 THROUGHPUT | space separated list of desired throughput limits, "-1" means: no limit, full speed | THROUGHPUT="-1"
 ACKS | space separated list of values for the producer property "acks", valid values "0 1 -1" | ACKS="0 -1"
-COMPRESSION | compression type to use, e.g. "compression.type=lz4" | COMPRESSION="none"
+COMPRESSION | compression type to use, e.g. "none","lz4",... | COMPRESSION="none"
 LINGER_MS | space separated list of desired values for "linger.ms" kafka property | LINGER_MS="0"
 BATCH_SIZE | space separated list of desired values for "batch.size" kafka property, "0": disable batching | BATCH_SIZE="10000"
+
