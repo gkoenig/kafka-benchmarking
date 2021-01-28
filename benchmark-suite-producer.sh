@@ -1,136 +1,87 @@
 #!/bin/bash
 
-KAFKA_TOPICS_CMD=$(which kafka-topics.sh)
-KAFKA_BENCHMARK_CMD=$(which kafka-producer-perf-test.sh)
+# 2021-01-26
+# Author: G. Koenig
+#
+# Script: benchmark-suite-producer.sh <bootstrap-servers>
+# Parameter: <bootstrap-servers> => the Kafka broker(s) to connect to as comma separated list <host>:<port>[,<host>:<port>]
+# Benchmark suite to run multiple performance tests for a producer, based on the properties specified in the "variables" section
+# The final performance tests will be executed via script "benchmark-producer.sh"
+#
+# Before running this script, verify and adapt the properties in section "variables" according to your needs
 
-##########
+###############
 # parsing args
-##########
-OPTS=`getopt -o p:r: --long partitions:,replicas:,num-records:,record-size:,producer-props:,bootstrap-servers:,throughput:,enable-topic-management -- "$@"`
+###############
+OPTS=`getopt -o b: -l bootstrap-servers: -- "$@"`
 eval set -- "$OPTS"
 while true ; do
-    case "$1" in
-        -p|--partitions)
-            case "$2" in
-                "") exit_out "option $1 requires an argument" 1 ; shift 2 ;;
-                *) PARTITION_OPT=$2 ; shift 2 ;;
-            esac ;;
-        -r|--replicas)
-            case "$2" in
-                "") exit_out "option $1 requires an argument" 1 ; shift 2 ;;
-                *) REPLICATION_OPT=$2 ; shift 2 ;;
-            esac ;;
-        --num-records)
-            case "$2" in
-                "") exit_out "option $1 requires an argument" 1 ; shift 2 ;;
-                *) NUM_RECORDS_OPT=$2 ; shift 2 ;;
-            esac ;;
-        --record-size)
-            case "$2" in
-                "") exit_out "option $1 requires an argument" 1 ; shift 2 ;;
-                *) RECORD_SIZE_OPT=$2 ; shift 2 ;;
-            esac ;;
-        --producer-props)
-            case "$2" in
-                "") exit_out "option $1 requires an argument" 1 ; shift 2 ;;
-                *) PRODUCER_PROPS_OPT=${2} ; shift 2 ;;
-            esac ;;
-        --bootstrap-servers)
-            case "$2" in
-                "") exit_out "option $1 requires an argument" 1 ; shift 2 ;;
-                *) BOOTSTRAP_SERVERS_OPT=${2} ; shift 2 ;;
-            esac ;;
-        --throughput)
-            case "$2" in
-                "") exit_out "option $1 requires an argument" 1 ; shift 2 ;;
-                *) THROUGHPUT_OPT=${2} ; shift 2 ;;
-            esac ;;
-        --enable-topic-management)
-            TOPIC_MANAGEMENT_OPT=1 ; shift  ;;
-        --) shift ; break ;;
-        *) echo "Internal error!" ; exit 1 ;;
-    esac
+  case "$1" in
+      -b|--bootstrap-servers)
+          case "$2" in
+              "") echo "argument missing for option $1 " && exit 1 ;;
+              *) BOOTSTRAP_SERVERS_OPT=${2} ; shift 2 ;;
+          esac ;;
+      --) shift ; break ;;
+      *) echo "Internal error!" ; exit 1 ;;
+  esac
 done
 
-
-
-##########
+############
 # variables
-##########
-PARTITION="${PARTITION_OPT:=2}"
-REPLICATION="${REPLICATION_OPT:=2}"
-RETENTION_MS=900000 # retention: 15min
-TOPICNAME="${TOPICNAME_OPT:=benchmark-r$REPLICATION-p$PARTITION}"
-NUM_RECORDS=${NUM_RECORDS_OPT:=100000}
-RECORD_SIZE=${RECORD_SIZE_OPT:=1024}
-BOOTSTRAP_SERVERS="${BOOTSTRAP_SERVERS_OPT:=34.65.161.215:9091}"
-THROUGHPUT=${THROUGHPUT_OPT:=-1}
-PRODUCER_PROPS=${PRODUCER_PROPS_OPT:='acks=1 compression.type=lz4'}
-TOPIC_MANAGEMENT=${TOPIC_MANAGEMENT_OPT:=0}
+############
 
-##########
-# functions
-##########
+# space separated list of number of partitions for the benchmark topic
+PARTITIONS="2 10"                   
+# space separated list of number of replicas for the benchmark topic
+REPLICAS="2"
+# space separated list of number of records to produce    
+NUM_RECORDS="100000"
+# space separated list of record sizes 
+RECORD_SIZES="1024 10240"
+# space separated list of desired throughput limits, "-1" means: no limit, full speed
+THROUGHPUT="-1"
+# space separated list of values for the producer property "acks", valid values "0 1 -1"
+ACKS="0 -1"
+# compression type to use, e.g. "compression.type=lz4"
+COMPRESSION="none"
+# space separated list of desired values for "linger.ms" kafka property
+LINGER_MS="0"
+# space separated list of desired values for "batch.size" kafka property, "0": disable batching
+BATCH_SIZE="10000"
+# the bootstrap server(s) to connect to as comma separated list <host>:<port>
+BOOTSTRAP_SERVERS="${BOOTSTRAP_SERVERS_OPT:=localhost:9091}"
 
-function create_topic {
-	echo_out "creating topic $TOPICNAME"
-	$KAFKA_TOPICS_CMD --bootstrap-server $BOOTSTRAP_SERVERS \
-		--replication-factor $REPLICATION \
-		--partitions $PARTITION \
-		--topic $TOPICNAME \
-		--config retention.ms=$RETENTION_MS \
-		--create
-}
+BENCHMARK_SCRIPT="$(dirname "$(readlink -f "$0")")/benchmark-producer.sh"
 
-function delete_topic {
-	echo_out "deleting topic $TOPICNAME"
-	$KAFKA_TOPICS_CMD --bootstrap-server $BOOTSTRAP_SERVERS \
-		--topic $TOPICNAME \
-		--delete
-}
+########################
+# start benchmark suite
+########################
+echo -e "\n******\nstarting benchmark suite at $(date)\n***\n"
+for _partitions in ${PARTITIONS}; do
+  for _replicas in ${REPLICAS}; do 
+    for _numrecords in ${NUM_RECORDS}; do
+      for _recordsize in ${RECORD_SIZES}; do
+        for _acks in ${ACKS}; do
+          for _compression in ${COMPRESSION}; do        
+            for _lingerms in ${LINGER_MS}; do
+              for _batchsize in ${BATCH_SIZE}; do
+                _producerprops="acks=${_acks} compression=${_compression} linger.ms=${_lingerms} batch.size=${_batchsize}"
+                $BENCHMARK_SCRIPT --partitions $_partitions \
+                  --replicas $_replicas \
+                  --enable-topic-management \
+                  --num-records $_numrecords \
+                  --record-size $_recordsize \
+                  --producer-props $_producerprops \
+                  --throughput $THROUGHPUT \
+                  --bootstrap-servers $BOOTSTRAP_SERVERS
+              done # closing _batchsize
+            done # closing _lingerms
+          done # closing _compression
+        done # closing _acks
+      done # closing _record-sizes
+    done # closing _num-records
+  done # closing _replicas
+done # closing _partitions
 
-function run_benchmark {
-	echo_out "starting producer performance test"
-	#echo 	$KAFKA_BENCHMARK_CMD --topic $TOPICNAME \
-	#	--num-records $NUM_RECORDS \
-	#	--record-size $RECORD_SIZE \
-	#	--throughput $THROUGHPUT \
-	#	--producer-props ${PRODUCER_PROPS} bootstrap.servers=$BOOTSTRAP_SERVERS
-
-	$KAFKA_BENCHMARK_CMD --topic $TOPICNAME \
-		--num-records $NUM_RECORDS \
-		--record-size $RECORD_SIZE \
-		--throughput $THROUGHPUT \
-		--producer-props ${PRODUCER_PROPS} bootstrap.servers=$BOOTSTRAP_SERVERS | tee "$(dirname "$(readlink -f "$0")")"/$TOPICNAME.txt
-}
-
-function finish {
-	echo_out "Benchmark run finished. BYE !"
-	exit
-}
-
-function exit_out {
-	echo "=========="
-	echo $1
-	echo "=========="
-	exit $2
-}
-
-function echo_out {
-	echo "***"
-	echo $1
-	echo "***"
-}
-
-#############
-# start benchmark procedure
-#############
-if [[ "$TOPIC_MANAGEMENT" -eq 1 ]]; then
-	create_topic
-fi
-run_benchmark
-if [[ "$TOPIC_MANAGEMENT" -eq 1 ]]; then
-	delete_topic
-fi
-finish 
-
+echo -e "\n***\nfinished benchmark suite at $(date)\n******\n"
