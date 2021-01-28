@@ -68,7 +68,7 @@ RETENTION_MS=900000 # retention: 15min
 TOPICNAME="${TOPICNAME_OPT:=benchmark-r$REPLICATION-p$PARTITION}"
 NUM_RECORDS=${NUM_RECORDS_OPT:=100000}
 RECORD_SIZE=${RECORD_SIZE_OPT:=1024}
-BOOTSTRAP_SERVERS="${BOOTSTRAP_SERVERS_OPT:=34.65.161.215:9091}"
+BOOTSTRAP_SERVERS="${BOOTSTRAP_SERVERS_OPT:=localhost:9091}"
 THROUGHPUT=${THROUGHPUT_OPT:=-1}
 PRODUCER_PROPS=${PRODUCER_PROPS_OPT:='acks=1 compression.type=lz4'}
 TOPIC_MANAGEMENT=${TOPIC_MANAGEMENT_OPT:=0}
@@ -95,22 +95,31 @@ function delete_topic {
 }
 
 function run_benchmark {
+    _STRIPPED_PROD_PROPS="${PRODUCER_PROPS// /_}"
+    OUTPUT_FILENAME="$TOPICNAME-$NUM_RECORDS-$RECORD_SIZE-$_STRIPPED_PROD_PROPS".txt
+
 	echo_out "starting producer performance test"
-	#echo 	$KAFKA_BENCHMARK_CMD --topic $TOPICNAME \
+	
+    #echo 	$KAFKA_BENCHMARK_CMD --topic $TOPICNAME \
 	#	--num-records $NUM_RECORDS \
 	#	--record-size $RECORD_SIZE \
 	#	--throughput $THROUGHPUT \
 	#	--producer-props ${PRODUCER_PROPS} bootstrap.servers=$BOOTSTRAP_SERVERS
 
-	$KAFKA_BENCHMARK_CMD --topic $TOPICNAME \
+    echo -e "\n******\n* starting benchmark at: $(date)\n" >> $OUTPUT_FILENAME
+	
+    $KAFKA_BENCHMARK_CMD --topic $TOPICNAME \
 		--num-records $NUM_RECORDS \
 		--record-size $RECORD_SIZE \
 		--throughput $THROUGHPUT \
-		--producer-props ${PRODUCER_PROPS} bootstrap.servers=$BOOTSTRAP_SERVERS | tee "$(dirname "$(readlink -f "$0")")"/$TOPICNAME.txt
+		--producer-props ${PRODUCER_PROPS} bootstrap.servers=$BOOTSTRAP_SERVERS | tee -a "$(dirname "$(readlink -f "$0")")"/$OUTPUT_FILENAME
+    
+    echo -e "\n* finished benchmark at: $(date)\n******\n" >> $OUTPUT_FILENAME
+	
 }
 
 function finish {
-	echo_out "Benchmark run finished. BYE !"
+	echo_out "Benchmark run finished."
 	exit
 }
 
