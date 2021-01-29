@@ -32,23 +32,23 @@ done
 ############
 
 # space separated list of number of partitions for the benchmark topic
-PARTITIONS="2 10"                   
+PARTITIONS="2"                   
 # space separated list of number of replicas for the benchmark topic
 REPLICAS="2"
 # space separated list of number of records to produce    
-NUM_RECORDS="100000"
+NUM_RECORDS="200000"
 # space separated list of record sizes 
-RECORD_SIZES="1024 10240"
+RECORD_SIZES="1024"
 # space separated list of desired throughput limits, "-1" means: no limit, full speed
 THROUGHPUT="-1"
 # space separated list of values for the producer property "acks", valid values "0 1 -1"
-ACKS="0 -1"
-# compression type to use, e.g. "compression.type=lz4"
+ACKS="1"
+# compression type to use, e.g. "lz4"
 COMPRESSION="none"
 # space separated list of desired values for "linger.ms" kafka property
 LINGER_MS="0"
 # space separated list of desired values for "batch.size" kafka property, "0": disable batching
-BATCH_SIZE="10000"
+BATCH_SIZE="16384"
 # the bootstrap server(s) to connect to as comma separated list <host>:<port>
 BOOTSTRAP_SERVERS="${BOOTSTRAP_SERVERS_OPT:=localhost:9091}"
 

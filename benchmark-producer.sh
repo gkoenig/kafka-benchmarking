@@ -70,7 +70,7 @@ NUM_RECORDS=${NUM_RECORDS_OPT:=100000}
 RECORD_SIZE=${RECORD_SIZE_OPT:=1024}
 BOOTSTRAP_SERVERS="${BOOTSTRAP_SERVERS_OPT:=localhost:9091}"
 THROUGHPUT=${THROUGHPUT_OPT:=-1}
-PRODUCER_PROPS=${PRODUCER_PROPS_OPT:='acks=1 compression.type=lz4'}
+PRODUCER_PROPS=${PRODUCER_PROPS_OPT:='acks=1 compression.type=none'}
 TOPIC_MANAGEMENT=${TOPIC_MANAGEMENT_OPT:=0}
 if [ -z "$TOPICNAME_OPT" ] 
 then
@@ -108,11 +108,14 @@ function run_benchmark {
 
 	echo_out "starting producer performance test"
 	
-    #echo 	$KAFKA_BENCHMARK_CMD --topic $TOPICNAME \
-	#	--num-records $NUM_RECORDS \
-	#	--record-size $RECORD_SIZE \
-	#	--throughput $THROUGHPUT \
-	#	--producer-props ${PRODUCER_PROPS} bootstrap.servers=$BOOTSTRAP_SERVERS
+    # first, print out the final cmd before executing it
+    # cmd will be stored in the output file as well to have cmd+results in one place later on
+    echo -e "\n Producer perf test execution:\n" \
+    	$KAFKA_BENCHMARK_CMD --topic $TOPICNAME \
+		--num-records $NUM_RECORDS \
+		--record-size $RECORD_SIZE \
+		--throughput $THROUGHPUT \
+		--producer-props ${PRODUCER_PROPS} bootstrap.servers=$BOOTSTRAP_SERVERS "\n" | tee -a "$(dirname "$(readlink -f "$0")")"/$OUTPUT_FILENAME
 
     echo -e "\n******\n* starting benchmark at: $(date)\n" >> $OUTPUT_FILENAME
 	
