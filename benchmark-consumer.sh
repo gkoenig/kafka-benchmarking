@@ -6,7 +6,7 @@ TIMEMS=$(date +%s)
 ##########
 # parsing args
 ##########
-OPTS=`getopt -o '' --long topic:,bootstrap-server:,broker-list:,messages:,fetch-max-wait-ms:,fetch-min-bytes:,fetch-size:,enable-auto-commit:,isolation-level: -- "$@"`
+OPTS=`getopt -o '' --long topic:,bootstrap-server:,broker-list:,messages:,fetch-max-wait-ms:,fetch-min-bytes:,fetch-size:,enable-auto-commit:,isolation-level:,output-to-file,verbose -- "$@"`
 eval set -- "$OPTS"
 while true ; do
     case "$1" in
@@ -50,12 +50,14 @@ while true ; do
                 "") exit_out "option $1 requires an argument" 1 ; shift 2 ;;
                 *) ISOLATION_LEVEL=${2} ; shift 2 ;;
             esac ;;
+        --output-to-file)
+            OUTPUT_TO_FILE=1 ; shift  ;;
+        --verbose)
+            VERBOSE=1 ; shift  ;;        
         --) shift ; break ;;
         *) echo "Internal error!" ; exit 1 ;;
     esac
 done
-
-
 
 ##########
 # variables
@@ -68,6 +70,7 @@ FETCH_MAX_WAIT_MS=${FETCH_MAX_WAIT_MS:=500}
 FETCH_MIN_BYTES=${FETCH_MIN_BYTES:=1}
 ENABLE_AUTO_COMMIT=${ENABLE_AUTO_COMMIT:=true}
 ISOLATION_LEVEL=${ISOLATION_LEVEL:=read_uncommitted}
+VERBOSE=${VERBOSE:=0}
 
 CONSUMER_CONFIG_FILE="$(dirname "$(readlink -f "$0")")"/_consumer.properties
 
@@ -81,45 +84,55 @@ function prepare_consumer_config {
 function run_benchmark {
   OUTPUT_FILENAME="Consumer-$TOPICNAME-$MESSAGES-$FETCH_SIZE".txt
   prepare_consumer_config 
+
+  if [ "$OUTPUT_TO_FILE" == "1" ]
+  then
+    REDIRECT_OUTPUT='| tee -a "$(dirname "$(readlink -f "$0")")"/$OUTPUT_FILENAME'
+  else
+    REDIRECT_OUTPUT=""
+  fi
+
 	echo_out "starting consumer performance test"
 	
   # first, print out the final cmd before executing it
-  echo -e "Consumer perf test cmd:\n"	\
+  echo_out "Consumer perf test cmd:\n"	\
     $KAFKA_BENCHMARK_CMD --topic $TOPICNAME \
     --messages $MESSAGES \
     --fetch-size $FETCH_SIZE \
     --consumer.config ${CONSUMER_CONFIG_FILE} \
-    --bootstrap-server $BROKER_LIST "\n" | tee -a "$(dirname "$(readlink -f "$0")")"/$OUTPUT_FILENAME
-
-  echo -e "\n******\n* starting benchmark at: $(date)\n" >> $OUTPUT_FILENAME
-	
+    --bootstrap-server $BROKER_LIST "\n" $REDIRECT_OUTPUT
+  
   $KAFKA_BENCHMARK_CMD --topic $TOPICNAME \
     --messages $MESSAGES \
     --fetch-size $FETCH_SIZE \
     --consumer.config $CONSUMER_CONFIG_FILE \
-    --bootstrap-server $BROKER_LIST  | tee -a "$(dirname "$(readlink -f "$0")")"/$OUTPUT_FILENAME
-
-  echo -e "\n* finished benchmark at: $(date)\n******\n" >> $OUTPUT_FILENAME
-	
+    --bootstrap-server $BROKER_LIST  $REDIRECT_OUTPUT
+  
 }
 
 function exit_out {
-	echo "=========="
-	echo -e "$1"
-	echo "=========="
+	if [ "$VERBOSE" == "1" ]
+  then
+    echo "=========="
+    echo -e ${1}
+    echo "=========="
+  fi
 	exit $2
 }
 
 function echo_out {
-	echo "***"
-	echo -e "$1"
-	echo "***"
+	if [ "$VERBOSE" == "1" ]
+  then
+    echo "***"
+    echo -e ${1}
+    echo "***"
+  fi
 }
+
 
 #############
 # start benchmark procedure
 #############
 [[ -z "$TOPICNAME" ]] && exit_out "\n!!!\n Topic name unknown. Parameter --topic <name> missing ?\n!!!\n" 1
 run_benchmark
-echo_out "performance test run finished."
-exit 0
+exit_out "performance test run finished." 0

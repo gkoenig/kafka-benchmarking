@@ -7,7 +7,7 @@ TIMEMS=$(date +%s)
 ##########
 # parsing args
 ##########
-OPTS=`getopt -o p:r: --long topic:,partitions:,replicas:,num-records:,record-size:,producer-props:,bootstrap-servers:,throughput:,enable-topic-management -- "$@"`
+OPTS=`getopt -o p:r: --long topic:,partitions:,replicas:,num-records:,record-size:,producer-props:,bootstrap-servers:,throughput:,enable-topic-management,output-to-file,verbose -- "$@"`
 eval set -- "$OPTS"
 while true ; do
     case "$1" in
@@ -53,6 +53,10 @@ while true ; do
             esac ;;
         --enable-topic-management)
             TOPIC_MANAGEMENT_OPT=1 ; shift  ;;
+        --output-to-file)
+            OUTPUT_TO_FILE=1 ; shift  ;;
+        --verbose)
+            VERBOSE=1 ; shift  ;;
         --) shift ; break ;;
         *) echo "Internal error!" ; exit 1 ;;
     esac
@@ -72,6 +76,8 @@ BOOTSTRAP_SERVERS="${BOOTSTRAP_SERVERS_OPT:=localhost:9091}"
 THROUGHPUT=${THROUGHPUT_OPT:=-1}
 PRODUCER_PROPS=${PRODUCER_PROPS_OPT:='acks=1 compression.type=none'}
 TOPIC_MANAGEMENT=${TOPIC_MANAGEMENT_OPT:=0}
+VERBOSE=${VERBOSE:=0}
+
 if [ -z "$TOPICNAME_OPT" ] 
 then
   TOPICNAME="benchmark-r$REPLICATION-p$PARTITION-$TIMEMS"
@@ -103,48 +109,57 @@ function delete_topic {
 }
 
 function run_benchmark {
-    _STRIPPED_PROD_PROPS="${PRODUCER_PROPS// /_}"
-    OUTPUT_FILENAME="$TOPICNAME_LIGHT-$NUM_RECORDS-$RECORD_SIZE-$_STRIPPED_PROD_PROPS".txt
+  _STRIPPED_PROD_PROPS="${PRODUCER_PROPS// /_}"
+  OUTPUT_FILENAME="$TOPICNAME_LIGHT-$NUM_RECORDS-$RECORD_SIZE-$_STRIPPED_PROD_PROPS".txt
+
+  if [ "$OUTPUT_TO_FILE" == "1" ]
+  then
+    REDIRECT_OUTPUT='| tee -a "$(dirname "$(readlink -f "$0")")"/$OUTPUT_FILENAME'
+  else
+    REDIRECT_OUTPUT=""
+  fi
 
 	echo_out "starting producer performance test"
 	
-    # first, print out the final cmd before executing it
-    # cmd will be stored in the output file as well to have cmd+results in one place later on
-    echo -e "\n Producer perf test execution:\n" \
-    	$KAFKA_BENCHMARK_CMD --topic $TOPICNAME \
-		--num-records $NUM_RECORDS \
-		--record-size $RECORD_SIZE \
-		--throughput $THROUGHPUT \
-		--producer-props ${PRODUCER_PROPS} bootstrap.servers=$BOOTSTRAP_SERVERS "\n" | tee -a "$(dirname "$(readlink -f "$0")")"/$OUTPUT_FILENAME
-
-    echo -e "\n******\n* starting benchmark at: $(date)\n" >> $OUTPUT_FILENAME
-	
+  echo_out "\n Producer perf test execution:\n" \
     $KAFKA_BENCHMARK_CMD --topic $TOPICNAME \
-		--num-records $NUM_RECORDS \
-		--record-size $RECORD_SIZE \
-		--throughput $THROUGHPUT \
-		--producer-props ${PRODUCER_PROPS} bootstrap.servers=$BOOTSTRAP_SERVERS | tee -a "$(dirname "$(readlink -f "$0")")"/$OUTPUT_FILENAME
-    
-    echo -e "\n* finished benchmark at: $(date)\n******\n" >> $OUTPUT_FILENAME
-	
+    --num-records $NUM_RECORDS \
+    --record-size $RECORD_SIZE \
+    --throughput $THROUGHPUT \
+    --producer-props ${PRODUCER_PROPS} bootstrap.servers=$BOOTSTRAP_SERVERS "\n" $REDIRECT_OUTPUT
+  
+
+  $KAFKA_BENCHMARK_CMD --topic $TOPICNAME \
+  --num-records $NUM_RECORDS \
+  --record-size $RECORD_SIZE \
+  --throughput $THROUGHPUT \
+  --producer-props ${PRODUCER_PROPS} bootstrap.servers=$BOOTSTRAP_SERVERS $REDIRECT_OUTPUT
+
+  
 }
 
 function finish {
 	echo_out "Benchmark run finished."
-	exit
+  exit
 }
 
 function exit_out {
-	echo "=========="
-	echo $1
-	echo "=========="
+	if [ "$VERBOSE" == "1" ]
+  then
+    echo "=========="
+    echo -e ${1}
+    echo "=========="
+  fi
 	exit $2
 }
 
 function echo_out {
-	echo "***"
-	echo $1
-	echo "***"
+	if [ "$VERBOSE" == "1" ]
+  then
+    echo "***"
+    echo -e ${1}
+    echo "***"
+  fi
 }
 
 #############

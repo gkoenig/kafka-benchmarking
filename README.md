@@ -10,7 +10,7 @@ In the OpenSource Kafka tgz, these scripts have a suffix ```.sh```, whereas in t
 * ```benchmark-suite-producer.sh``` : wrapper around _benchmark-producer.sh_ to execute multiple benchmark runs with varying property settings
 * ```benchmark-suite-consumer.sh``` : wrapper around _benchmark-consumer.sh_ to execute multiple benchmark runs with varying property settings
 
-The output of the benchmark execution will be stored within a .txt file in the same directory as the benchmark-*.sh scripts are.
+The output of the benchmark execution will be stored within a .txt file in the same directory as the benchmark-*.sh scripts are, if parameter ```--output-to-file``` is specified only.
 Repeating benchmark executions with the same properties will append the output to existing output file.
 
 
@@ -38,6 +38,8 @@ Parameters are:
  | --bootstrap-servers _\<string\>_ | comma separated list of \<host\>:\<port\> of your Kafka brokers. This property is **mandatory** |
  | --throughput _\<string\>_ | specifies the throughput to use during the benchmark run | -1
  | --topic _\<string\>_ |  specifies the topic to use for the benchmark execution. This topic **must** exist before you execute this script.  |
+ | --output-to-file | if provided, the console output will be stored to a text file, too |
+ | --verbose | if specified, additional text output will be printed to the terminal |
   
 
 **NOTE**
@@ -95,7 +97,9 @@ Parameters are:
  | --fetch-size  |  The amount of data to fetch in a single request | 1048576
  | --enable-auto-commit _\<number\>_ |  If true the consumer's offset will be periodically committed in the background | true  
  | --isolation-level _<string\>_ | specifies how transactional message are being read ([official doc](https://kafka.apache.org/documentation/#consumerconfigs_isolation.level)) | read_uncommitted
-
+ | --output-to-file | if provided, the console output will be stored to a text file, too |
+ | --verbose | if specified, additional text output will be printed to the terminal |
+  
 **Usage examples**
 
 * run consumer benchmark with minimal arguments, using kafka broker on localhost:9091 and topicname _my-benchmark-topic_:
@@ -115,7 +119,7 @@ Parameters are:
 Script ```benchmark-suite-producer.sh``` is just a wrapper around _benchmark-producer.sh_ to run a variety of performance test runs against your Kafka cluster. It loops over the properties you want to change between test runs and calls _benchmark-producer.sh_ once for each single combination of properties.  
 The properties, which are possible to iterate over, you'll find within ```benchmark-suite-producer.sh```, section  **variables**.  
 
-The only parameter you have to provide to this script is: ```--bootstrap-servers``` , the bootstrap server(s) to connect to as comma separated list ```--bootstrap-servers <host>:<port>```
+The only **mandatory** parameter is: ```--bootstrap-servers``` , the bootstrap server(s) to connect to as comma separated list ```--bootstrap-servers <host>:<port>```
 
 Parameters to adjust for your UseCase, in ```benchmark-suite-producer.sh```, are:
 
