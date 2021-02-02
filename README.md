@@ -47,12 +47,13 @@ A single benchmark execution for a Producer can be executed via calling ```bench
   | --bootstrap-servers _\<string\>_ | comma separated list of \<host\>:\<port\> of your Kafka brokers. This property is **mandatory** |
   | --throughput _\<string\>_ | specifies the throughput to use during the benchmark run | -1
   | --topic _\<string\>_ |  specifies the topic to use for the benchmark execution. This topic **must** exist before you execute this script.  |
+  | --producer-config _\<config-file\>_ | config-file to provide additional attributes to connect to broker(s), mainly **SSL** & **authentication** |
 
 * Output
   
   The script generates 2 output files  
-  * .txt: this file includes all messages printed during the performance test execution
-  * .csv: this file includes the pure metrics, comma separated, and commented the start-/finish-time as well as the parameters for the test execution
+  * .txt: **one file per execution**, this file includes all messages printed during the performance test execution
+  * .csv: **one file per day**, this file includes the pure metrics, comma separated, and commented the start-/finish-time as well as the parameters for the test execution
   
 
 **NOTE**
@@ -92,6 +93,18 @@ If you already have a topic you want to use for the benchmark execution, then pr
   
   ```bash
   ./benchmark-producer.sh --bootstrap-servers localhost:9091 --enable-topic-management --partitions 3 --replicas 2 --record-size 1024 --num-records 200000 --producer-props 'acks=1 compression.type=lz4 batch.size=10000 linger.ms=0'
+  ```
+
+* run benchmark with minimal parameters, let the script manage the topic on local Kafka broker with port 9092 and provide producer.config including SASL_PLAINTEXT info:
+  
+  ```bash
+  ./benchmark-producer.sh --bootstrap-servers localhost:9091 --enable-topic-management --partitions 5 --replicas 2 --producer-config ./sample-producer-sasl.config
+  ```
+  where content of _sample-producer-sasl.config_ for a PLAINTEXT SASL auth (user + password) can be:  
+  ```
+  security.protocol=SASL_PLAINTEXT
+  sasl.mechanism=PLAIN
+  sasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required username="admin" password="admin-secret";
   ```
 
 ---

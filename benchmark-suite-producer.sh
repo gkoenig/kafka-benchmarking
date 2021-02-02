@@ -8,21 +8,38 @@
 # Benchmark suite to run multiple performance tests for a producer, based on the properties specified in the "variables" section
 # The final performance tests will be executed via script "benchmark-producer.sh"
 #
-# Before running this script, verify and adapt the properties in section "variables" according to your needs
+# Before running this script, verify and adapt the properties in section "variables" according to your needs.
+# This suite only works on topics which are managed by the script itself (see property "--enable-topic-management" to call 
+# the underlying script "benchmark-producer.sh") !!
 
 ###############
 # parsing args
 ###############
-OPTS=`getopt -o b: -l bootstrap-servers: -- "$@"`
+OPTS=`getopt -o b: -l bootstrap-servers:,producer-config: -- "$@"`
+VALID_ARGUMENTS=$?
+if [ "$VALID_ARGUMENTS" != "0" ]; then
+  exit_out "invalid argument list" 1
+fi
+
 eval set -- "$OPTS"
 while true ; do
   case "$1" in
       -b|--bootstrap-servers)
           case "$2" in
-              "") echo "argument missing for option $1 " && exit 1 ;;
-              *) BOOTSTRAP_SERVERS_OPT=${2} ; shift 2 ;;
+              "") echo "argument missing for option $1 " 
+                  ;;
+              *)  BOOTSTRAP_SERVERS_OPT=${2} 
+                  shift 2 
+                  ;;
           esac ;;
-      --) shift ; break ;;
+      --producer-config)
+          case "$2" in
+              "") echo "option $1 requires an argument"
+                  PRODUCER_CONFIG_OPT=" "                    
+                  ;;
+              *) PRODUCER_CONFIG_OPT=${2} ; shift 2 ;;
+          esac ;;
+        --) shift ; break ;;
       *) echo "Internal error!" ; exit 1 ;;
   esac
 done
@@ -52,6 +69,13 @@ BATCH_SIZE="16384"
 # the bootstrap server(s) to connect to as comma separated list <host>:<port>
 BOOTSTRAP_SERVERS="${BOOTSTRAP_SERVERS_OPT:=localhost:9091}"
 
+if [ ! -z "$PRODUCER_CONFIG_OPT" ]
+then
+  PRODUCER_CONFIG_FILE="${PRODUCER_CONFIG_OPT}"
+else
+  PRODUCER_CONFIG_FILE=""
+fi
+
 BENCHMARK_SCRIPT="$(dirname "$(readlink -f "$0")")/benchmark-producer.sh"
 
 ########################
@@ -74,6 +98,7 @@ for _partitions in ${PARTITIONS}; do
                   --record-size $_recordsize \
                   --producer-props $_producerprops \
                   --throughput $THROUGHPUT \
+                  --producer-config $PRODUCER_CONFIG_FILE \
                   --bootstrap-servers $BOOTSTRAP_SERVERS
               done # closing _batchsize
             done # closing _lingerms

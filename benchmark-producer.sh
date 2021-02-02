@@ -17,53 +17,107 @@
 # The final performance tests will be executed via script "benchmark-producer.sh"
 #
 
+##################
+# helper functions
+##################
+function exit_out {
+	echo -e "\n---\n${1}\n---\n"
+  exit $2
+}
 
+function echo_out {
+	TIMEUTC=$(date --utc +%F_%T)
+	echo -e "## $TIMEUTC=>${1}" | tee -a $OUTPUT_FILENAME_TXT
+}
+
+##########
+# variables
+##########
+RETENTION_MS=900000 # retention: 15min
+PARTITION=2
+REPLICATION=2
+NUM_RECORDS=100000
+RECORD_SIZE=1024
+BOOTSTRAP_SERVERS=localhost:9091
+THROUGHPUT=-1
+PRODUCER_PROPS='acks=1 compression.type=none'
+TOPIC_MANAGEMENT=0
 
 ##########
 # parsing args
 ##########
-OPTS=`getopt -o p:r: --long topic:,partitions:,replicas:,num-records:,record-size:,producer-props:,bootstrap-servers:,throughput:,enable-topic-management,output-to-file,verbose -- "$@"`
+OPTS=`getopt -o p:r: --long topic:,partitions:,replicas:,num-records:,record-size:,producer-props:,bootstrap-servers:,throughput:,enable-topic-management,producer-config: -- "$@"`
+VALID_ARGUMENTS=$?
+if [ "$VALID_ARGUMENTS" != "0" ]; then
+  exit_out "invalid argument list" 1
+fi
+
 eval set -- "$OPTS"
 while true ; do
     case "$1" in
         -p|--partitions)
             case "$2" in
-                "") exit_out "option $1 requires an argument" 1 ; shift 2 ;;
-                *) PARTITION_OPT=$2 ; shift 2 ;;
+                "") echo_out "option $1 requires an argument, using default value"
+                    PARTITION=2
+                    ;;
+                *)  PARTITION=$2
+                    shift 2 
+                    ;;
             esac ;;
         -r|--replicas)
             case "$2" in
-                "") exit_out "option $1 requires an argument" 1 ; shift 2 ;;
-                *) REPLICATION_OPT=$2 ; shift 2 ;;
+                "") echo_out "option $1 requires an argument, using default value"
+                    REPLICATION=2
+                    ;;
+                *) REPLICATION=$2 ; shift 2 ;;
             esac ;;
         --num-records)
             case "$2" in
-                "") exit_out "option $1 requires an argument" 1 ; shift 2 ;;
-                *) NUM_RECORDS_OPT=$2 ; shift 2 ;;
+                "") echo_out "option $1 requires an argument, using default value"
+                    NUM_RECORDS=100000
+                    ;;
+                *) NUM_RECORDS=$2 ; shift 2 ;;
             esac ;;
         --record-size)
             case "$2" in
-                "") exit_out "option $1 requires an argument" 1 ; shift 2 ;;
-                *) RECORD_SIZE_OPT=$2 ; shift 2 ;;
+                "") echo_out "option $1 requires an argument, using default value"
+                    RECORD_SIZE=1024
+                    ;;
+                *) RECORD_SIZE=$2 ; shift 2 ;;
             esac ;;
         --producer-props)
             case "$2" in
-                "") exit_out "option $1 requires an argument" 1 ; shift 2 ;;
-                *) PRODUCER_PROPS_OPT=${2} ; shift 2 ;;
+                "") echo_out "option $1 requires an argument, using default value"
+                    PRODUCER_PROPS="acks=1 compression.type=none"
+                    ;;
+                *) PRODUCER_PROPS=${2} ; shift 2 ;;
+            esac ;;
+        --producer-config)
+            case "$2" in
+                "") echo_out "option $1 requires an argument"
+                    PRODUCER_CONFIG_OPT=" "                    
+                    ;;
+                *) PRODUCER_CONFIG_OPT=${2} ; shift 2 ;;
             esac ;;
         --bootstrap-servers)
             case "$2" in
-                "") exit_out "option $1 requires an argument" 1 ; shift 2 ;;
-                *) BOOTSTRAP_SERVERS_OPT=${2} ; shift 2 ;;
+                "") echo_out "option $1 requires an argument, using default value"
+                    BOOTSTRAP_SERVERS="localhost:9091"
+                    ;;
+                *) BOOTSTRAP_SERVERS=${2} ; shift 2 ;;
             esac ;;
         --throughput)
             case "$2" in
-                "") exit_out "option $1 requires an argument" 1 ; shift 2 ;;
-                *) THROUGHPUT_OPT=${2} ; shift 2 ;;
+                "") echo_out "option $1 requires an argument, using default value"
+                    THROUGHPUT="-1"
+                    ;;
+                *) THROUGHPUT=${2} ; shift 2 ;;
             esac ;;
         --topic)
             case "$2" in
-                "") exit_out "option $1 requires an argument" 1 ; shift 2 ;;
+                "") echo_out "option $1 requires an argument"
+                    TOPICNAME_OPT="missing"
+                    ;;
                 *) TOPICNAME_OPT=${2} ; shift 2 ;;
             esac ;;
         --enable-topic-management)
@@ -73,21 +127,6 @@ while true ; do
     esac
 done
 
-
-
-##########
-# variables
-##########
-PARTITION="${PARTITION_OPT:=2}"
-REPLICATION="${REPLICATION_OPT:=2}"
-RETENTION_MS=900000 # retention: 15min
-NUM_RECORDS=${NUM_RECORDS_OPT:=100000}
-RECORD_SIZE=${RECORD_SIZE_OPT:=1024}
-BOOTSTRAP_SERVERS="${BOOTSTRAP_SERVERS_OPT:=localhost:9091}"
-THROUGHPUT=${THROUGHPUT_OPT:=-1}
-PRODUCER_PROPS=${PRODUCER_PROPS_OPT:='acks=1 compression.type=none'}
-TOPIC_MANAGEMENT=${TOPIC_MANAGEMENT_OPT:=0}
-
 if [ -z "$TOPICNAME_OPT" ] 
 then
   TOPICNAME="benchmark-r$REPLICATION-p$PARTITION-$TIMEMS"
@@ -95,6 +134,15 @@ then
 else
   TOPICNAME=$TOPICNAME_OPT
   TOPICNAME_LIGHT=$TOPICNAME_OPT
+fi
+
+if [ ! -z "$PRODUCER_CONFIG_OPT" ]
+then
+  PRODUCER_CONFIG_FILE="--producer.config ${PRODUCER_CONFIG_OPT}"
+  COMMAND_CONFIG_FILE="--command-config ${PRODUCER_CONFIG_OPT}"
+else
+  PRODUCER_CONFIG_FILE=""
+  COMMAND_CONFIG_FILE=""
 fi
 
 OUTPUT_FILENAME_TXT="$(dirname "$(readlink -f "$0")")/benchmark-producer-$(date --utc +%s).txt"
@@ -111,14 +159,14 @@ function create_topic {
 		--partitions $PARTITION \
 		--topic $TOPICNAME \
 		--config retention.ms=$RETENTION_MS \
-		--create
+		--create $COMMAND_CONFIG_FILE
 }
 
 function delete_topic {
 	echo -e "deleting topic $TOPICNAME \n"
 	$KAFKA_TOPICS_CMD --bootstrap-server $BOOTSTRAP_SERVERS \
 		--topic $TOPICNAME \
-		--delete
+		--delete $COMMAND_CONFIG_FILE
 }
 
 function run_benchmark {
@@ -130,29 +178,20 @@ function run_benchmark {
     --num-records $NUM_RECORDS \
     --record-size $RECORD_SIZE \
     --throughput $THROUGHPUT \
-    --producer-props ${PRODUCER_PROPS} bootstrap.servers=$BOOTSTRAP_SERVERS"
+    --producer-props ${PRODUCER_PROPS} bootstrap.servers=$BOOTSTRAP_SERVERS $PRODUCER_CONFIG_FILE"
   
   
   $KAFKA_BENCHMARK_CMD --topic $TOPICNAME \
   --num-records $NUM_RECORDS \
   --record-size $RECORD_SIZE \
   --throughput $THROUGHPUT \
+   $PRODUCER_CONFIG_FILE \
   --producer-props ${PRODUCER_PROPS} bootstrap.servers=$BOOTSTRAP_SERVERS | tee -a $OUTPUT_FILENAME_TXT
 
   # comment the summary line, which is the last line of the output
   sed -i "$(cat $OUTPUT_FILENAME_TXT | wc -l)"' s/^/## /' $OUTPUT_FILENAME_TXT
 
   echo_out "end-perf-test"  
-}
-
-function exit_out {
-	echo -e "\n---\n${1}\n---\n"
-  exit $2
-}
-
-function echo_out {
-	TIMEUTC=$(date --utc +%F_%T)
-	echo -e "## $TIMEUTC=>${1}" | tee -a $OUTPUT_FILENAME_TXT
 }
 
 #########################################
