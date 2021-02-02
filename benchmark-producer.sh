@@ -139,6 +139,9 @@ function run_benchmark {
   --throughput $THROUGHPUT \
   --producer-props ${PRODUCER_PROPS} bootstrap.servers=$BOOTSTRAP_SERVERS | tee -a $OUTPUT_FILENAME_TXT
 
+  # comment the summary line, which is the last line of the output
+  sed -i "$(cat $OUTPUT_FILENAME_TXT | wc -l)"' s/^/## /' $OUTPUT_FILENAME_TXT
+
   echo_out "end-perf-test"  
 }
 
@@ -172,9 +175,9 @@ fi
 
 echo -e "\n---\nreformatting output file\n---\n"
 OUTPUT_FILENAME_CSV__TEMP=$(echo $OUTPUT_FILENAME_CSV".temp")
-[ ! -s ${OUTPUT_FILENAME_CSV} ] && echo -e "records_sent,records_per_sec,throughput,avg_latency,max_latency\n" > $OUTPUT_FILENAME_CSV__TEMP
-sed '/^[[:blank:]]*#/!s/[(),]//g' $OUTPUT_FILENAME_TXT >> $OUTPUT_FILENAME_CSV__TEMP
-awk '/^[[:blank:]]*#/{print $0;next}{print $1","$4","$6","$8","$12}' $OUTPUT_FILENAME_CSV__TEMP > $OUTPUT_FILENAME_CSV
+[ ! -s ${OUTPUT_FILENAME_CSV} ] && echo -e "records_sent,records_per_sec,throughput,avg_latency,max_latency\n" > $OUTPUT_FILENAME_CSV
+sed '/^[[:blank:]]*#/!s/[(),]//g' $OUTPUT_FILENAME_TXT > $OUTPUT_FILENAME_CSV__TEMP
+awk '/^[[:blank:]]*#/{print $0;next}{print $1","$4","$6","$8","$12}' $OUTPUT_FILENAME_CSV__TEMP >> $OUTPUT_FILENAME_CSV
 rm -f $OUTPUT_FILENAME_CSV__TEMP
 echo -e "\n---\nFinished. Bye.\n---\n"
 
