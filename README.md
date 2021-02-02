@@ -25,21 +25,34 @@ Repeating benchmark executions with the same properties will append the output t
 
 #### Producer benchmark
 
-A single benchmark execution for a Producer can be executed via calling ```benchmark-producer.sh``` directly, providing commandline parameters.  
-Parameters are:
- | parameter | description | default |
- | --------- | ----------- | ------- |
- | -p \| --partitions _\<number\>_  | where _\<number\>_ is an int, telling how many partitions the benchmark topic shall have. **Only required if argument ```--enable-topic-management``` is specified** | 2
- | -r \| --replicas _\<number\>_  | where _\<number\>_ is an int, telling how many replicas the benchmark topic shall have. **Only required if argument ```--enable-topic-management``` is specified** | 2  
- |--enable-topic-management  |  setting this property will trigger the creation of the topic before the benchmark as well as the deletion of the topic afterwards. |
- | --num-records _\<number\>_ |  where _\<number\>_ specifies how many messages shall be created during the benchmark. | 100000  
- | --record-size _\<number\>_ |  where _\<number\>_ specifies how big (in bytes) each record shall be. | 1024  
- | --producer-props _<string\>_ | list of additional properties for the benchmark execution, like e.g. ```acks```, ```linger.ms```, ... | 'acks=1 compression.type=none'
- | --bootstrap-servers _\<string\>_ | comma separated list of \<host\>:\<port\> of your Kafka brokers. This property is **mandatory** |
- | --throughput _\<string\>_ | specifies the throughput to use during the benchmark run | -1
- | --topic _\<string\>_ |  specifies the topic to use for the benchmark execution. This topic **must** exist before you execute this script.  |
- | --output-to-file | if provided, the console output will be stored to a text file, too |
- | --verbose | if specified, additional text output will be printed to the terminal |
+A single benchmark execution for a Producer can be executed via calling ```benchmark-producer.sh``` directly, providing commandline parameters. You can set environment variables pointing to the executables for ```kafka-topics```-command as well as for ```kafka-producer-perf-test```-command as shown below.  
+
+* Environment variables
+  
+  | variable | description | example
+  | -------- | ----------- | -------
+  | KAFKA_TOPICS_CMD | how to execute the kafka-topics command (full path or relative) | /opt/kafka/bin/kafka-topics.sh
+  | KAFKA_BENCHMARK_CMD | how to execute the kafka-producer-perf-test command (full path or relative) | /opt/kafka/bin/kafka-producer-perf-test-sh
+
+* Parameters are:
+  
+  | parameter | description | default |
+  | --------- | ----------- | ------- |
+  | -p \| --partitions _\<number\>_  | where _\<number\>_ is an int, telling how many partitions the benchmark topic shall have. **Only required if argument ```--enable-topic-management``` is specified** | 2
+  | -r \| --replicas _\<number\>_  | where _\<number\>_ is an int, telling how many replicas the benchmark topic shall have. **Only required if argument ```--enable-topic-management``` is specified** | 2  
+  |--enable-topic-management  |  setting this property will trigger the creation of the topic before the benchmark as well as the deletion of the topic afterwards. |
+  | --num-records _\<number\>_ |  where _\<number\>_ specifies how many messages shall be created during the benchmark. | 100000  
+  | --record-size _\<number\>_ |  where _\<number\>_ specifies how big (in bytes) each record shall be. | 1024  
+  | --producer-props _<string\>_ | list of additional properties for the benchmark execution, like e.g. ```acks```, ```linger.ms```, ... | 'acks=1 compression.type=none'
+  | --bootstrap-servers _\<string\>_ | comma separated list of \<host\>:\<port\> of your Kafka brokers. This property is **mandatory** |
+  | --throughput _\<string\>_ | specifies the throughput to use during the benchmark run | -1
+  | --topic _\<string\>_ |  specifies the topic to use for the benchmark execution. This topic **must** exist before you execute this script.  |
+
+* Output
+  
+  The script generates 2 output files  
+  * .txt: this file includes all messages printed during the performance test execution
+  * .csv: this file includes the pure metrics, comma separated, and commented the start-/finish-time as well as the parameters for the test execution
   
 
 **NOTE**
