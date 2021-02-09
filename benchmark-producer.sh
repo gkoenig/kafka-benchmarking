@@ -127,6 +127,8 @@ while true ; do
     esac
 done
 
+TIMEMS=$(date --utc +%s)
+
 if [ -z "$TOPICNAME_OPT" ] 
 then
   TOPICNAME="benchmark-r$REPLICATION-p$PARTITION-$TIMEMS"
@@ -145,7 +147,9 @@ else
   COMMAND_CONFIG_FILE=""
 fi
 
-OUTPUT_FILENAME_TXT="$(dirname "$(readlink -f "$0")")/benchmark-producer-$(date --utc +%s).txt"
+# one plain output file per execution
+OUTPUT_FILENAME_TXT="$(dirname "$(readlink -f "$0")")/benchmark-producer-$TIMEMS.txt"
+# one csv formatted output file per day
 OUTPUT_FILENAME_CSV="$(dirname "$(readlink -f "$0")")/benchmark-producer-$(date --utc +%F).csv"
 
 ##########
