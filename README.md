@@ -8,7 +8,6 @@ In the OpenSource Kafka tgz, these scripts have a suffix ```.sh```, whereas in t
 * ```benchmark-producer.sh``` : execute one producer benchmark run with a dedicated set of properties
 * ```benchmark-consumer.sh``` : execute one consumer benchmark run with a dedicated set of properties
 * ```benchmark-suite-producer.sh``` : wrapper around _benchmark-producer.sh_ to execute multiple benchmark runs with varying property settings
-* ```benchmark-suite-consumer.sh``` : wrapper around _benchmark-consumer.sh_ to execute multiple benchmark runs with varying property settings
 
 The output of the benchmark execution will be stored within a .txt file in the same directory as the benchmark-*.sh scripts are, if parameter ```--output-to-file``` is specified only.
 Repeating benchmark executions with the same properties will append the output to existing output file.
@@ -73,31 +72,31 @@ If you already have a topic you want to use for the benchmark execution, then pr
 * run benchmark with minimal parameters, let the script manage the topic on local Kafka broker with port 9091:
   
   ```bash
-  ./benchmark-producer.sh --bootstrap-servers localhost:9091 --enable-topic-management --partitions 5 --replicas 2
+  ./benchmark-producer.sh --bootstrap-servers localhost:9091 --partitions 5 --replicas 2
   ```
 
 * tuning for **Throughput**:
   
   ```bash
-  ./benchmark-producer.sh --bootstrap-servers localhost:9091 --enable-topic-management --partitions 3 --replicas 2 --record-size 1024 --num-records 200000 --producer-props 'acks=1 compression.type=lz4 batch.size=100000 linger.ms=50'
+  ./benchmark-producer.sh --bootstrap-servers localhost:9091 --partitions 3 --replicas 2 --record-size 1024 --num-records 200000 --producer-props 'acks=1 compression.type=lz4 batch.size=100000 linger.ms=50'
   ```
 
 * tuning for **Latency**:
   
   ```bash
-  ./benchmark-producer.sh --bootstrap-servers localhost:9091 --enable-topic-management --partitions 3 --replicas 2 --record-size 1024 --num-records 200000 --producer-props 'acks=1 compression.type=lz4 batch.size=10000 linger.ms=0'
+  ./benchmark-producer.sh --bootstrap-servers localhost:9091 --partitions 3 --replicas 2 --record-size 1024 --num-records 200000 --producer-props 'acks=1 compression.type=lz4 batch.size=10000 linger.ms=0'
   ```
 
 * tuning for **Durability**
   
   ```bash
-  ./benchmark-producer.sh --bootstrap-servers localhost:9091 --enable-topic-management --partitions 3 --replicas 2 --record-size 1024 --num-records 200000 --producer-props 'acks=1 compression.type=lz4 batch.size=10000 linger.ms=0'
+  ./benchmark-producer.sh --bootstrap-servers localhost:9091 --partitions 3 --replicas 2 --record-size 1024 --num-records 200000 --producer-props 'acks=1 compression.type=lz4 batch.size=10000 linger.ms=0'
   ```
 
 * run benchmark with minimal parameters, let the script manage the topic on local Kafka broker with port 9092 and provide producer.config including SASL_PLAINTEXT info:
   
   ```bash
-  ./benchmark-producer.sh --bootstrap-servers localhost:9091 --enable-topic-management --partitions 5 --replicas 2 --producer-config ./sample-producer-sasl.config
+  ./benchmark-producer.sh --bootstrap-servers localhost:9091 --partitions 5 --replicas 2 --producer-config ./sample-producer-sasl.config
   ```
   where content of _sample-producer-sasl.config_ for a PLAINTEXT SASL auth (user + password) can be:  
   ```
