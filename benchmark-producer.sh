@@ -120,8 +120,6 @@ while true ; do
                     ;;
                 *) TOPICNAME_OPT=${2} ; shift 2 ;;
             esac ;;
-        --enable-topic-management)
-            TOPIC_MANAGEMENT_OPT=1 ; shift  ;;
         --) shift ; break ;;
         *) echo "Internal error!" ; exit 1 ;;
     esac
@@ -133,6 +131,7 @@ if [ -z "$TOPICNAME_OPT" ]
 then
   TOPICNAME="benchmark-r$REPLICATION-p$PARTITION-$TIMEMS"
   TOPICNAME_LIGHT="benchmark-r$REPLICATION-p$PARTITION"
+  TOPIC_MANAGEMENT=1
 else
   TOPICNAME=$TOPICNAME_OPT
   TOPICNAME_LIGHT=$TOPICNAME_OPT

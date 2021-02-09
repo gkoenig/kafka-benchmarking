@@ -40,7 +40,6 @@ A single benchmark execution for a Producer can be executed via calling ```bench
   | --------- | ----------- | ------- |
   | -p \| --partitions _\<number\>_  | where _\<number\>_ is an int, telling how many partitions the benchmark topic shall have. **Only required if argument ```--enable-topic-management``` is specified** | 2
   | -r \| --replicas _\<number\>_  | where _\<number\>_ is an int, telling how many replicas the benchmark topic shall have. **Only required if argument ```--enable-topic-management``` is specified** | 2  
-  |--enable-topic-management  |  setting this property will trigger the creation of the topic before the benchmark as well as the deletion of the topic afterwards. |
   | --num-records _\<number\>_ |  where _\<number\>_ specifies how many messages shall be created during the benchmark. | 100000  
   | --record-size _\<number\>_ |  where _\<number\>_ specifies how big (in bytes) each record shall be. | 1024  
   | --producer-props _<string\>_ | list of additional properties for the benchmark execution, like e.g. ```acks```, ```linger.ms```, ... | 'acks=1 compression.type=none'
@@ -58,8 +57,8 @@ A single benchmark execution for a Producer can be executed via calling ```bench
 
 **NOTE**
 
-Either  ```--enable-topic-management``` or ```--topic``` is required.  
-If you don't have a pre-existing topic and you don't want to manage the topic by yourself, just provide ```--enable-topic-management```. This will create the topic before the benchmark run, and delete it afterwards.  
+Topic management for the execution:    
+If you don't have a pre-existing topic and you don't want to manage the topic by yourself, just **omit** property ```--topic```. By that the script will create a topic before the benchmark run, and delete it afterwards.  
 If you already have a topic you want to use for the benchmark execution, then provide its name via ```--topic```
 
 ---
