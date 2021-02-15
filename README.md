@@ -3,8 +3,14 @@
 - [Kafka benchmarking](#kafka-benchmarking)
   - [Prerequisites](#prerequisites)
   - [Single benchmark execution](#single-benchmark-execution)
-      - [Producer benchmark](#producer-benchmark)
-      - [Consumer benchmark](#consumer-benchmark)
+    - [Producer benchmark](#producer-benchmark)
+    - [Consumer benchmark](#consumer-benchmark)
+  
+- [Docker](#docker)
+  - [Usage](#usage)
+    - [minimal example](#minimal-example)
+    - [with authentication](#with-authentication)
+    - [providing additinal parameters](#providing-more-parameters)
 _______
 
 # Kafka benchmarking
@@ -29,7 +35,7 @@ Repeating benchmark executions with the same properties will append the output t
 
 ## Single benchmark execution
 
-#### Producer benchmark
+### Producer benchmark
 
 **NOTE**
 > the scripts for running producer benchmark(s) you'll find in directory [**_producer/scripts_**](./producer/scripts/)
@@ -119,7 +125,7 @@ A single benchmark execution for a Producer can be executed via calling ```bench
 
 ---
 
-#### Consumer benchmark
+### Consumer benchmark
 
 A single benchmark execution for a Consumer can be executed via calling ```benchmark-consumer.sh``` directly, providing commandline parameters.  
 Parameters are:
@@ -175,7 +181,9 @@ BATCH_SIZE | space separated list of desired values for "batch.size" kafka prope
 
 to be able to run the benchmarks within a container, you can use the provided Dockerfile to create such a container.  
 Alternatively you'll find prebuilt docker container on [gkoenig/kafka-producer-benchmark](https://hub.docker.com/repository/docker/gkoenig/kafka-producer-benchmark) to execute the producer performance test.  
+
 **NOTE**
+
 > - you have to mount a local directory to the container path _/tmp/output_ so that you can save the output files from the benchmark run on your local workstation.
 > - ensure that the host directory (which you mount into the container) has permissions, so that the container can write file(s) to it
 
@@ -184,6 +192,7 @@ Alternatively you'll find prebuilt docker container on [gkoenig/kafka-producer-b
 To be able to store the output files from the benchmark run on your local workstation/laptop, create a local dir and mount it into the container. Otherwise you won't be able to access the files after the benchmark run is finished.
 
 ### minimal example
+
 the following example shows a scenario with minimal parameters. It will run a producer benchmark, connecting to Kafka (unauthenticated) on port 9091 on IP _000.111.222.333_ **you obviously have to provide you IP address of your Kafka broker here !!!**
 ```
 mkdir ./output
@@ -192,6 +201,7 @@ docker run  -v ./output/:/tmp/output gkoenig/kafka-producer-benchmark:0.1 --boot
 ```
 
 ### with authentication
+
 if you have a kafka cluster with authentication, then you can provide additional parameters as you would do on a _plain_ execution of benchmark-producer.sh script, e.g. if your brokers listen on port 9092 for SASL_PLAINTEXT authentication, then specify the port and provide additional producer-config as below (**you obviously have to provide you IP address of your Kafka broker here !!!**):  
 
 ```
@@ -202,6 +212,7 @@ docker run  -v ./output/:/tmp/output gkoenig/kafka-producer-benchmark:0.1 --boot
 ```
 
 ### providing more parameters
+
 You can provide the same list of parameters as if you execute the producer-benchmark outside of Docker containers, means plain on the terminal.
 Detailled description of parameters can be found [here](https://github.com/gkoenig/kafka-benchmarking#producer-benchmark)
 
