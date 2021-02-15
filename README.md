@@ -1,3 +1,11 @@
+# TOC <!-- omit in toc -->
+
+- [Kafka benchmarking](#kafka-benchmarking)
+  - [Prerequisites](#prerequisites)
+  - [Single benchmark execution](#single-benchmark-execution)
+      - [Producer benchmark](#producer-benchmark)
+      - [Consumer benchmark](#consumer-benchmark)
+_______
 
 # Kafka benchmarking
 
@@ -12,7 +20,6 @@ In the OpenSource Kafka tgz, these scripts have a suffix ```.sh```, whereas in t
 The output of the benchmark execution will be stored within a .txt file in the same directory as the benchmark-*.sh scripts are, if parameter ```--output-to-file``` is specified only.
 Repeating benchmark executions with the same properties will append the output to existing output file.
 
-
 ## Prerequisites
 
 * a running Kafka cluster
@@ -23,6 +30,10 @@ Repeating benchmark executions with the same properties will append the output t
 ## Single benchmark execution
 
 #### Producer benchmark
+
+**NOTE**
+> the scripts for running producer benchmark(s) you'll find in directory [**_producer/scripts_**](./producer/scripts/)
+
 
 A single benchmark execution for a Producer can be executed via calling ```benchmark-producer.sh``` directly, providing commandline parameters. You can set environment variables pointing to the executables for ```kafka-topics```-command as well as for ```kafka-producer-perf-test```-command as shown below.  
 
@@ -37,8 +48,8 @@ A single benchmark execution for a Producer can be executed via calling ```bench
   
   | parameter | description | default |
   | --------- | ----------- | ------- |
-  | -p \| --partitions _\<number\>_  | where _\<number\>_ is an int, telling how many partitions the benchmark topic shall have. **Only required if argument ```--enable-topic-management``` is specified** | 2
-  | -r \| --replicas _\<number\>_  | where _\<number\>_ is an int, telling how many replicas the benchmark topic shall have. **Only required if argument ```--enable-topic-management``` is specified** | 2  
+  | -p \| --partitions _\<number\>_  | where _\<number\>_ is an int, telling how many partitions the benchmark topic shall have. **Only required if you want the script manage the topic for the benchmark** | 2
+  | -r \| --replicas _\<number\>_  | where _\<number\>_ is an int, telling how many replicas the benchmark topic shall have. **OOnly required if you want the script manage the topic for the benchmark** | 2  
   | --num-records _\<number\>_ |  where _\<number\>_ specifies how many messages shall be created during the benchmark. | 100000  
   | --record-size _\<number\>_ |  where _\<number\>_ specifies how big (in bytes) each record shall be. | 1024  
   | --producer-props _<string\>_ | list of additional properties for the benchmark execution, like e.g. ```acks```, ```linger.ms```, ... | 'acks=1 compression.type=none'
@@ -56,9 +67,10 @@ A single benchmark execution for a Producer can be executed via calling ```bench
 
 **NOTE**
 
-Topic management for the execution:    
-If you don't have a pre-existing topic and you don't want to manage the topic by yourself, just **omit** property ```--topic```. By that the script will create a topic before the benchmark run, and delete it afterwards.  
-If you already have a topic you want to use for the benchmark execution, then provide its name via ```--topic```
+> Topic management for the execution:    
+> If you don't have a pre-existing topic and you don't want to manage the topic by yourself, just **omit** property ```--topic```. 
+> By that the script will create a topic before the benchmark run, and delete it afterwards.  
+> If you already have a topic you want to use for the benchmark execution, then provide its name via ```--topic```
 
 ---
 **Usage examples**
@@ -159,3 +171,43 @@ COMPRESSION | compression type to use, e.g. "none","lz4",... | COMPRESSION="none
 LINGER_MS | space separated list of desired values for "linger.ms" kafka property | LINGER_MS="0"
 BATCH_SIZE | space separated list of desired values for "batch.size" kafka property, "0": disable batching | BATCH_SIZE="10000"
 
+# Docker
+
+to be able to run the benchmarks within a container, you can use the provided Dockerfile to create such a container.  
+Alternatively you'll find prebuilt docker container on [gkoenig/kafka-producer-benchmark](https://hub.docker.com/repository/docker/gkoenig/kafka-producer-benchmark) to execute the producer performance test.  
+**NOTE**
+> - you have to mount a local directory to the container path _/tmp/output_ so that you can save the output files from the benchmark run on your local workstation.
+> - ensure that the host directory (which you mount into the container) has permissions, so that the container can write file(s) to it
+
+## Usage
+
+To be able to store the output files from the benchmark run on your local workstation/laptop, create a local dir and mount it into the container. Otherwise you won't be able to access the files after the benchmark run is finished.
+
+### minimal example
+the following example shows a scenario with minimal parameters. It will run a producer benchmark, connecting to Kafka (unauthenticated) on port 9091 on IP _000.111.222.333_ **you obviously have to provide you IP address of your Kafka broker here !!!**
+```
+mkdir ./output
+chmod 777 ./output
+docker run  -v ./output/:/tmp/output gkoenig/kafka-producer-benchmark:0.1 --bootstrap-servers 000.111.222.333:9091
+```
+
+### with authentication
+if you have a kafka cluster with authentication, then you can provide additional parameters as you would do on a _plain_ execution of benchmark-producer.sh script, e.g. if your brokers listen on port 9092 for SASL_PLAINTEXT authentication, then specify the port and provide additional producer-config as below (**you obviously have to provide you IP address of your Kafka broker here !!!**):  
+
+```
+git clone git@github.com:gkoenig/kafka-benchmarking.git
+cd scripts
+chmod 777 ./output
+docker run  -v ./output/:/tmp/output gkoenig/kafka-producer-benchmark:0.1 --bootstrap-servers 000.111.222.333:9092 --producer-config sample-producer-sasl.config
+```
+
+### providing more parameters
+You can provide the same list of parameters as if you execute the producer-benchmark outside of Docker containers, means plain on the terminal.
+Detailled description of parameters can be found [here](https://github.com/gkoenig/kafka-benchmarking#producer-benchmark)
+
+```
+git clone git@github.com:gkoenig/kafka-benchmarking.git
+cd scripts
+chmod 777 ./output
+docker run  -v ./output/:/tmp/output gkoenig/kafka-producer-benchmark:0.1 --bootstrap-servers 000.111.222.333:9092 --producer-config sample-producer-sasl.config --num-records 2000000 --compression lz4
+```

@@ -87,7 +87,7 @@ function run_benchmark {
 
   if [ "$OUTPUT_TO_FILE" == "1" ]
   then
-    REDIRECT_OUTPUT='| tee -a "$(dirname "$(readlink -f "$0")")"/$OUTPUT_FILENAME'
+    REDIRECT_OUTPUT='| tee -a "$(dirname "$(readlink -f "$0")")"/output/$OUTPUT_FILENAME'
   else
     REDIRECT_OUTPUT=""
   fi

@@ -147,9 +147,9 @@ else
 fi
 
 # one plain output file per execution
-OUTPUT_FILENAME_TXT="$(dirname "$(readlink -f "$0")")/benchmark-producer-$TIMEMS.txt"
+OUTPUT_FILENAME_TXT="$(dirname "$(readlink -f "$0")")/output/benchmark-producer-$TIMEMS.txt"
 # one csv formatted output file per day
-OUTPUT_FILENAME_CSV="$(dirname "$(readlink -f "$0")")/benchmark-producer-$(date --utc +%F).csv"
+OUTPUT_FILENAME_CSV="$(dirname "$(readlink -f "$0")")/output/benchmark-producer-$(date --utc +%F).csv"
 
 ##########
 # functions
