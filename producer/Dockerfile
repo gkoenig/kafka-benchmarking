@@ -3,7 +3,7 @@ FROM confluentinc/cp-kafka:6.1.0
 ENV KAFKA_BENCHMARK_CMD=/usr/bin/kafka-producer-perf-test
 ENV KAFKA_TOPICS_CMD=/usr/bin/kafka-topics
 
-COPY scripts/* /tmp/
+COPY scripts/benchmark-producer.sh /tmp/
 WORKDIR /tmp
 
 CMD [ "--bootstrap-server", "localhost:9091" ]
