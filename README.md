@@ -5,12 +5,18 @@
   - [Single benchmark execution](#single-benchmark-execution)
     - [Producer benchmark](#producer-benchmark)
     - [Consumer benchmark](#consumer-benchmark)
+  - [Job specification](#job-specification)
   
 - [Docker](#docker)
   - [Usage](#usage)
     - [minimal example](#minimal-example)
     - [with authentication](#with-authentication)
     - [providing additinal parameters](#providing-more-parameters)
+
+- [Kubernetes](#kubernetes)
+  - [Description](#description)
+  - [ConfigMap](#configmap)
+  - [Job specification](#job-specification)
 _______
 
 # Kafka benchmarking
@@ -206,7 +212,7 @@ if you have a kafka cluster with authentication, then you can provide additional
 
 ```
 git clone git@github.com:gkoenig/kafka-benchmarking.git
-cd scripts
+cd producer/scripts
 chmod 777 ./output
 docker run  -v ./output/:/tmp/output gkoenig/kafka-producer-benchmark:0.1 --bootstrap-servers 000.111.222.333:9092 --producer-config sample-producer-sasl.config
 ```
@@ -221,4 +227,38 @@ git clone git@github.com:gkoenig/kafka-benchmarking.git
 cd scripts
 chmod 777 ./output
 docker run  -v ./output/:/tmp/output gkoenig/kafka-producer-benchmark:0.1 --bootstrap-servers 000.111.222.333:9092 --producer-config sample-producer-sasl.config --num-records 2000000 --compression lz4
+```
+
+# Kubernetes
+
+## Description
+
+To run the benchmark container within K8s cluster, you need to ensure the following prereq's:
+- you need to have the possibility to access a persistent volume (to store the output of the benchmark run), mounted on _/tmp/output_ within the container
+- **!! only if you have to specify SASL properties to connect to your Kafka brokers**
+to be able to pass the SASL properties, you need to create a ConfigMap from the file sample-producer-sasl.config (or whichever file you created including your SASL configuration to talk to the Kafka brokers) and use that ConfigMap as a volume in the container spec. **Ensure** that the mountpoint of this ConfigMap corresponds with the _args_ property specifying the _--producer-config_ parameter (see example below).
+If you can connect to your brokers unauthenticated, you do not need this configmap, and you have to delete the corresponding volumeMount in the Job yaml as well.
+
+## ConfigMap
+
+```bash
+# assuming you are in the root folder of the Github repo you cloned
+cd producer
+kubectl create configmap kafka-sasl --from-file=scripts/sample-producer-sasl.config 
+```
+
+## Job specification
+
+To execute the benchmark it is sufficient to create a Kubernetes Job, that
+- mounts the persistent volume to store the output
+- mounts the configmap, including the SASL config **!! of course only, if you have to specify SASL properties to connect to your Kafka brokers**
+
+Ensure that you replace the IP (or hostname) and port of your Kafka broker inside the [producer-benchmark-job.yaml](./producer/producer-benchmark-job.yaml). The placeholder is set to _111.222.333.444:9092_
+
+```bash
+# assuming you are in the root folder of the Github repo you cloned
+# if the job already exists, you first have to delete it, before it is created again
+cd producer
+# kubectl delete -f ./producer-benchmark-job.yaml
+kubectl apply -f ./producer-benchmark-job.yaml
 ```
