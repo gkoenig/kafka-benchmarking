@@ -5,14 +5,12 @@
   - [Single benchmark execution](#single-benchmark-execution)
     - [Producer benchmark](#producer-benchmark)
     - [Consumer benchmark](#consumer-benchmark)
-  - [Job specification](#job-specification)
-  
+  - [Batch of benchmark executions](#batch-of-benchmark-executions)
 - [Docker](#docker)
-  - [Usage](#usage)
+  - [Producer benchmark usage examples](#producer-benchmark-usage-examples)
     - [minimal example](#minimal-example)
     - [with authentication](#with-authentication)
-    - [providing additinal parameters](#providing-more-parameters)
-
+    - [providing more parameters](#providing-more-parameters)
 - [Kubernetes](#kubernetes)
   - [Description](#description)
   - [ConfigMap](#configmap)
@@ -133,6 +131,9 @@ A single benchmark execution for a Producer can be executed via calling ```bench
 
 ### Consumer benchmark
 
+**NOTE**
+> the scripts for running consumer benchmark(s) you'll find in directory [**_consumer/scripts_**](./consumer/scripts/)
+
 A single benchmark execution for a Consumer can be executed via calling ```benchmark-consumer.sh``` directly, providing commandline parameters.  
 Parameters are:
  | parameter | description | default |
@@ -145,22 +146,30 @@ Parameters are:
  | --fetch-size  |  The amount of data to fetch in a single request | 1048576
  | --enable-auto-commit _\<number\>_ |  If true the consumer's offset will be periodically committed in the background | true  
  | --isolation-level _<string\>_ | specifies how transactional message are being read ([official doc](https://kafka.apache.org/documentation/#consumerconfigs_isolation.level)) | read_uncommitted
- | --output-to-file | if provided, the console output will be stored to a text file, too |
+ | --consumer-config _\<config-file\>_ | config-file to provide additional attributes to connect to broker(s), mainly **SSL** & **authentication** |
  | --verbose | if specified, additional text output will be printed to the terminal |
   
 **Usage examples**
 
 * run consumer benchmark with minimal arguments, using kafka broker on localhost:9091 and topicname _my-benchmark-topic_:
   
-  ```./benchmark-consumer.sh --topic my-benchmark-topic
+  ```./benchmark-consumer.sh --topic my-benchmark-topic```
+
+* providing an config file containing e.g. properties for SASL authentication (as shown in [sasl-properties.config](consumer/scripts/sasl-properties.config)):
+
+  ```./benchmark-consumer.sh --topic my-benchmark-topic --consumer-config ./sasl-properties.config```
+
+* same as above, but with some more output on the commandline:
+
+  ```./benchmark-consumer.sh --topic my-benchmark-topic --consumer-config ./sasl-properties.config --verbose```
 
 * tuning for **Throughput**:
 
-  ```./benchmark-consumer.sh --topic my-benchmark-topic --fetch-min-bytes 100000
+  ```./benchmark-consumer.sh --topic my-benchmark-topic --fetch-min-bytes 100000```
 
 * tuning for **Latency**:
 
-  ```./benchmark-consumer.sh --topic my-benchmark-topic --fetch-size 25000 --fetch-max-wait-ms 100
+  ```./benchmark-consumer.sh --topic my-benchmark-topic --fetch-size 25000 --fetch-max-wait-ms 100```
 
 ## Batch of benchmark executions
 
@@ -193,13 +202,13 @@ Alternatively you'll find prebuilt docker container on [gkoenig/kafka-producer-b
 > - you have to mount a local directory to the container path _/tmp/output_ so that you can save the output files from the benchmark run on your local workstation.
 > - ensure that the host directory (which you mount into the container) has permissions, so that the container can write file(s) to it
 
-## Usage
+## Producer benchmark usage examples
 
 To be able to store the output files from the benchmark run on your local workstation/laptop, create a local dir and mount it into the container. Otherwise you won't be able to access the files after the benchmark run is finished.
 
 ### minimal example
 
-the following example shows a scenario with minimal parameters. It will run a producer benchmark, connecting to Kafka (unauthenticated) on port 9091 on IP _000.111.222.333_ **you obviously have to provide you IP address of your Kafka broker here !!!**
+the following example shows a scenario with minimal parameters. It will run a **producer** benchmark, connecting to Kafka (unauthenticated) on port 9091 on IP _000.111.222.333_ **you obviously have to provide you IP address of your Kafka broker here !!!**
 ```
 mkdir ./output
 chmod 777 ./output
@@ -233,7 +242,7 @@ docker run  -v ./output/:/tmp/output gkoenig/kafka-producer-benchmark:0.1 --boot
 
 ## Description
 
-To run the benchmark container within K8s cluster, you need to ensure the following prereq's:
+To run the producer benchmark container within K8s cluster, you need to ensure the following prereq's:
 - you need to have the possibility to access a persistent volume (to store the output of the benchmark run), mounted on _/tmp/output_ within the container
 - **!! only if you have to specify SASL properties to connect to your Kafka brokers**
 to be able to pass the SASL properties, you need to create a ConfigMap from the file sample-producer-sasl.config (or whichever file you created including your SASL configuration to talk to the Kafka brokers) and use that ConfigMap as a volume in the container spec. **Ensure** that the mountpoint of this ConfigMap corresponds with the _args_ property specifying the _--producer-config_ parameter (see example below).

@@ -6,7 +6,7 @@ TIMEMS=$(date +%s)
 ##########
 # parsing args
 ##########
-OPTS=`getopt -o '' --long topic:,bootstrap-server:,broker-list:,messages:,fetch-max-wait-ms:,fetch-min-bytes:,fetch-size:,enable-auto-commit:,isolation-level:,output-to-file,verbose -- "$@"`
+OPTS=`getopt -o '' --long topic:,bootstrap-servers:,broker-list:,messages:,consumer-config:,fetch-max-wait-ms:,fetch-min-bytes:,fetch-size:,enable-auto-commit:,isolation-level:,verbose -- "$@"`
 eval set -- "$OPTS"
 while true ; do
     case "$1" in
@@ -15,7 +15,7 @@ while true ; do
                 "") exit_out "option $1 requires an argument" 1 ; shift 2 ;;
                 *) TOPICNAME=$2 ; shift 2 ;;
             esac ;;
-        --bootstrap-server|--broker-list)
+        --bootstrap-servers|--broker-list)
             case "$2" in
                 "") exit_out "option $1 requires an argument" 1 ; shift 2 ;;
                 *) BROKER_LIST=$2 ; shift 2 ;;
@@ -50,8 +50,13 @@ while true ; do
                 "") exit_out "option $1 requires an argument" 1 ; shift 2 ;;
                 *) ISOLATION_LEVEL=${2} ; shift 2 ;;
             esac ;;
-        --output-to-file)
-            OUTPUT_TO_FILE=1 ; shift  ;;
+        --consumer-config)
+            case "$2" in
+                "") echo_out "option $1 requires an argument"
+                    CONSUMER_CONFIG_OPT=" "                    
+                    ;;
+                *) CONSUMER_CONFIG_OPT=${2} ; shift 2 ;;
+            esac ;;
         --verbose)
             VERBOSE=1 ; shift  ;;        
         --) shift ; break ;;
@@ -75,7 +80,14 @@ VERBOSE=${VERBOSE:=0}
 CONSUMER_CONFIG_FILE="$(dirname "$(readlink -f "$0")")"/_consumer.properties
 
 function prepare_consumer_config {
-  echo "fetch.min.bytes=$FETCH_MIN_BYTES" > $CONSUMER_CONFIG_FILE
+  # start with an empty config file
+  echo "" > $CONSUMER_CONFIG_FILE
+  
+  if [ -f $CONSUMER_CONFIG_OPT ]
+  then
+    cat $CONSUMER_CONFIG_OPT >> $CONSUMER_CONFIG_FILE
+  fi
+  echo -e "\nfetch.min.bytes=$FETCH_MIN_BYTES" >> $CONSUMER_CONFIG_FILE
   echo "fetch.max.wait.ms=$FETCH_MAX_WAIT_MS" >> $CONSUMER_CONFIG_FILE
   echo "enable.auto.commit=$ENABLE_AUTO_COMMIT" >> $CONSUMER_CONFIG_FILE
   echo "isolation.level=$ISOLATION_LEVEL" >> $CONSUMER_CONFIG_FILE
@@ -85,28 +97,21 @@ function run_benchmark {
   OUTPUT_FILENAME="Consumer-$TOPICNAME-$MESSAGES-$FETCH_SIZE".txt
   prepare_consumer_config 
 
-  if [ "$OUTPUT_TO_FILE" == "1" ]
-  then
-    REDIRECT_OUTPUT='| tee -a "$(dirname "$(readlink -f "$0")")"/output/$OUTPUT_FILENAME'
-  else
-    REDIRECT_OUTPUT=""
-  fi
-
-	echo_out "starting consumer performance test"
+  echo_out "starting consumer performance test"
 	
   # first, print out the final cmd before executing it
-  echo_out "Consumer perf test cmd:\n"	\
+  echo "Consumer perf test cmd:\n"	\
     $KAFKA_BENCHMARK_CMD --topic $TOPICNAME \
     --messages $MESSAGES \
     --fetch-size $FETCH_SIZE \
     --consumer.config ${CONSUMER_CONFIG_FILE} \
-    --bootstrap-server $BROKER_LIST "\n" $REDIRECT_OUTPUT
+    --bootstrap-server $BROKER_LIST "\n" 
   
   $KAFKA_BENCHMARK_CMD --topic $TOPICNAME \
     --messages $MESSAGES \
     --fetch-size $FETCH_SIZE \
     --consumer.config $CONSUMER_CONFIG_FILE \
-    --bootstrap-server $BROKER_LIST  $REDIRECT_OUTPUT
+    --bootstrap-server $BROKER_LIST  $REDIRECT_OUTPUT | tee -a "$(dirname "$(readlink -f "$0")")"/output/$OUTPUT_FILENAME
   
 }
 
@@ -133,6 +138,10 @@ function echo_out {
 #############
 # start benchmark procedure
 #############
-[[ -z "$TOPICNAME" ]] && exit_out "\n!!!\n Topic name unknown. Parameter --topic <name> missing ?\n!!!\n" 1
+if [ -z "$TOPICNAME" ] 
+then
+  VERBOSE=1; 
+  exit_out "\n!!!\n Topic name unknown. Parameter --topic <name> missing ?\n!!!\n" 1
+fi
 run_benchmark
 exit_out "performance test run finished." 0
