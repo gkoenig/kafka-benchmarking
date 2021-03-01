@@ -1,12 +1,11 @@
 #!/bin/bash
 
-KAFKA_BENCHMARK_CMD=$(which kafka-consumer-perf-test.sh)
 TIMEMS=$(date +%s)
 
 ##########
 # parsing args
 ##########
-OPTS=`getopt -o '' --long topic:,bootstrap-servers:,broker-list:,messages:,consumer-config:,fetch-max-wait-ms:,fetch-min-bytes:,fetch-size:,enable-auto-commit:,isolation-level:,verbose -- "$@"`
+OPTS=`getopt -o '' --long topic:,bootstrap-servers:,broker-list:,messages:,consumer-config:,consumer.config:,fetch-max-wait-ms:,fetch-min-bytes:,fetch-size:,enable-auto-commit:,isolation-level:,verbose -- "$@"`
 eval set -- "$OPTS"
 while true ; do
     case "$1" in
@@ -50,7 +49,7 @@ while true ; do
                 "") exit_out "option $1 requires an argument" 1 ; shift 2 ;;
                 *) ISOLATION_LEVEL=${2} ; shift 2 ;;
             esac ;;
-        --consumer-config)
+        --consumer-config|consumer.config)
             case "$2" in
                 "") echo_out "option $1 requires an argument"
                     CONSUMER_CONFIG_OPT=" "                    
@@ -100,7 +99,7 @@ function run_benchmark {
   echo_out "starting consumer performance test"
 	
   # first, print out the final cmd before executing it
-  echo "Consumer perf test cmd:\n"	\
+  echo -e "Consumer perf test cmd:\n"	\
     $KAFKA_BENCHMARK_CMD --topic $TOPICNAME \
     --messages $MESSAGES \
     --fetch-size $FETCH_SIZE \
@@ -138,6 +137,9 @@ function echo_out {
 #############
 # start benchmark procedure
 #############
+[[ -z "$KAFKA_BENCHMARK_CMD" ]] && KAFKA_BENCHMARK_CMD=$(which kafka-consumer-perf-test.sh)
+[[ -z "$KAFKA_BENCHMARK_CMD" ]] && exit_out "missing the config to executable kafka-consumer-perf-test, env varialbe KAFKA_BENCHMARK_CMD not set" 1
+
 if [ -z "$TOPICNAME" ] 
 then
   VERBOSE=1; 
