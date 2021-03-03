@@ -5,7 +5,7 @@ TIMEMS=$(date +%s)
 ##########
 # parsing args
 ##########
-OPTS=`getopt -o '' --long topic:,bootstrap-servers:,broker-list:,messages:,consumer-config:,consumer.config:,fetch-max-wait-ms:,fetch-min-bytes:,fetch-size:,enable-auto-commit:,isolation-level:,verbose -- "$@"`
+OPTS=`getopt -o '' --long topic:,bootstrap-servers:,broker-list:,messages:,consumer-config:,consumer.config:,fetch-max-wait-ms:,fetch-min-bytes:,fetch-size:,enable-auto-commit:,isolation-level:,group-id:,verbose -- "$@"`
 eval set -- "$OPTS"
 while true ; do
     case "$1" in
@@ -56,6 +56,13 @@ while true ; do
                     ;;
                 *) CONSUMER_CONFIG_OPT=${2} ; shift 2 ;;
             esac ;;
+        --group-id)
+            case "$2" in
+                "") echo_out "option $1 requires an argument"
+                    CONSUMER_GROUP_ID=" "                    
+                    ;;
+                *) CONSUMER_GROUP_ID=${2} ; shift 2 ;;
+            esac ;;        
         --verbose)
             VERBOSE=1 ; shift  ;;        
         --) shift ; break ;;
@@ -74,6 +81,7 @@ FETCH_MAX_WAIT_MS=${FETCH_MAX_WAIT_MS:=500}
 FETCH_MIN_BYTES=${FETCH_MIN_BYTES:=1}
 ENABLE_AUTO_COMMIT=${ENABLE_AUTO_COMMIT:=true}
 ISOLATION_LEVEL=${ISOLATION_LEVEL:=read_uncommitted}
+CONSUMER_GROUP_ID=${CONSUMER_GROUP_ID:=consumer-benchmark}
 VERBOSE=${VERBOSE:=0}
 
 CONSUMER_CONFIG_FILE="$(dirname "$(readlink -f "$0")")"/_consumer.properties
@@ -104,12 +112,14 @@ function run_benchmark {
     --messages $MESSAGES \
     --fetch-size $FETCH_SIZE \
     --consumer.config ${CONSUMER_CONFIG_FILE} \
+    --group ${CONSUMER_GROUP_ID} \
     --bootstrap-server $BROKER_LIST "\n" 
   
   $KAFKA_BENCHMARK_CMD --topic $TOPICNAME \
     --messages $MESSAGES \
     --fetch-size $FETCH_SIZE \
     --consumer.config $CONSUMER_CONFIG_FILE \
+    --group ${CONSUMER_GROUP_ID} \
     --bootstrap-server $BROKER_LIST  $REDIRECT_OUTPUT | tee -a "$(dirname "$(readlink -f "$0")")"/output/$OUTPUT_FILENAME
   
 }

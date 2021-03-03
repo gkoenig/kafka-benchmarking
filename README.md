@@ -142,11 +142,12 @@ Parameters are:
  | --bootstrap-server _\<string\>_ | comma separated list of \<host\>:\<port\> of your Kafka brokers.  | localhost:9091
  | --messages _\<number\>_ |  where _\<number\>_ specifies how many messages shall be consumed during the benchmark. | 10000 
  | --fetch-max-wait-ms _\<number\>_  | specifies the timeout the server waits to collect _fetch-min-bytes_ to return to the client ([official doc](https://kafka.apache.org/documentation/#consumerconfigs_fetch.max.wait.ms)) | 500
- | --fetch-min-bytes _\<number\>_  | The minimum amount of data the server should return for a fetch request. Value of "1" means _do not wait and send data as soon as there is some_ ([official doc](https://kafka.apache.org/documentation/#consumerconfigs_fetch.min.bytes)) | 1  
+ | --fetch-min-bytes _\<number\>_  | The minimum amount of data the server should return for a fetch request. <br/>Value of "1" means _do not wait and send data as soon as there is some_ ([official doc](https://kafka.apache.org/documentation/#consumerconfigs_fetch.min.bytes)) | 1  
  | --fetch-size  |  The amount of data to fetch in a single request | 1048576
  | --enable-auto-commit _\<number\>_ |  If true the consumer's offset will be periodically committed in the background | true  
  | --isolation-level _<string\>_ | specifies how transactional message are being read ([official doc](https://kafka.apache.org/documentation/#consumerconfigs_isolation.level)) | read_uncommitted
  | --consumer-config _\<config-file\>_ | config-file to provide additional attributes to connect to broker(s), mainly **SSL** & **authentication** |
+ | --group-id _\<string\>_ | the ConsumerGroup id for the consumer. <br/>**Important** if you have ACLs enabled, to specify permissions for this group as well | consumer-benchmark
  | --verbose | if specified, additional text output will be printed to the terminal |
   
 **Usage examples**
@@ -195,7 +196,9 @@ BATCH_SIZE | space separated list of desired values for "batch.size" kafka prope
 # Docker
 
 to be able to run the benchmarks within a container, you can use the provided Dockerfile to create such a container.  
-Alternatively you'll find prebuilt docker container on [gkoenig/kafka-producer-benchmark](https://hub.docker.com/repository/docker/gkoenig/kafka-producer-benchmark) to execute the producer performance test.  
+Alternatively you'll find prebuilt docker container on Docker Hub:
+- Producer Image: [gkoenig/kafka-producer-benchmark](https://hub.docker.com/repository/docker/gkoenig/kafka-producer-benchmark)
+- Consumer Image: [gkoenig/kafka-consumer-benchmark](https://hub.docker.com/repository/docker/gkoenig/kafka-consumer-benchmark)
 
 **NOTE**
 
