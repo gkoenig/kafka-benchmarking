@@ -201,8 +201,8 @@ function run_benchmark {
 # start benchmark procedure
 #########################################
 
-[[ -z "$KAFKA_TOPICS_CMD" ]] && KAFKA_TOPICS_CMD=$(which kafka-topics.sh)
-[[ -z "$KAFKA_BENCHMARK_CMD" ]] && KAFKA_BENCHMARK_CMD=$(which kafka-producer-perf-test.sh)
+[[ -z "$KAFKA_TOPICS_CMD" ]] && KAFKA_TOPICS_CMD=$(which kafka-topics)
+[[ -z "$KAFKA_BENCHMARK_CMD" ]] && KAFKA_BENCHMARK_CMD=$(which kafka-producer-perf-test)
 
 [[ -z "$KAFKA_TOPICS_CMD" ]] && exit_out "missing the config to executable kafka-topics, env variable KAFKA_TOPICS_CMD not set." 1
 [[ -z "$KAFKA_BENCHMARK_CMD" ]] && exit_out "missing the config to executable kafka-producer-perf-test, env varialbe KAFKA_BENCHMARK_CMD not set" 1

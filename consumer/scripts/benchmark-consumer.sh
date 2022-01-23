@@ -147,7 +147,7 @@ function echo_out {
 #############
 # start benchmark procedure
 #############
-[[ -z "$KAFKA_BENCHMARK_CMD" ]] && KAFKA_BENCHMARK_CMD=$(which kafka-consumer-perf-test.sh)
+[[ -z "$KAFKA_BENCHMARK_CMD" ]] && KAFKA_BENCHMARK_CMD=$(which kafka-consumer-perf-test)
 [[ -z "$KAFKA_BENCHMARK_CMD" ]] && exit_out "missing the config to executable kafka-consumer-perf-test, env varialbe KAFKA_BENCHMARK_CMD not set" 1
 
 if [ -z "$TOPICNAME" ] 
